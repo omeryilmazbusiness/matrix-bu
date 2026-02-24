@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { HeroSection } from '@/features/dashboard/components/hero-section';
 import { SearchFilterBar } from '@/features/dashboard/components/search-filter-bar';
 import { TopicFilter } from '@/features/dashboard/components/topic-filter';
@@ -11,30 +11,72 @@ import { ProfileCard } from '@/features/profiles/components';
 import { WelcomeGuide } from '@/features/dashboard/components/welcome-guide';
 import { SuggestChannelButton } from '@/features/dashboard/components/suggest-channel-button';
 import { Container } from '@/shared/components/layout';
-import { mockProfiles } from '@/features/profiles/utils/mock-data';
+import { usePublicProfiles } from '@/features/profiles/hooks/use-public-profiles';
 import { ProfileCardSkeleton, PanoCardSkeleton, WeeklyPersonCardSkeleton } from '@/shared/components/ui/skeleton';
 import type { ProfileStatus, ProfileTopic } from '@/shared/lib/constants';
-import { Layers, SearchX, Star, CheckCircle2 } from 'lucide-react';
+import { Layers, SearchX, Star, CheckCircle2, AlertCircle } from 'lucide-react';
 
 export default function Home() {
   const [activeFilter, setActiveFilter] = useState<ProfileStatus | 'all'>('all');
   const [activeTopic, setActiveTopic] = useState<ProfileTopic | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'recent' | 'popular' | 'name'>('popular');
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Intentional loading delay for premium feel - Increased to 800ms
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 800); // 800ms delay for smooth premium loading
+  // Fetch profiles from database
+  const { profiles: dbProfiles, loading: dbLoading, error: dbError } = usePublicProfiles();
 
-    return () => clearTimeout(timer);
-  }, []);
+  // Map database profiles to expected format
+  const profiles = useMemo(() => 
+    dbProfiles.map(profile => ({
+      id: profile.id,
+      slug: profile.slug,
+      name: profile.name || profile.channel_title || 'İsimsiz Kanal',
+      title: profile.title || profile.channel_title || '',
+      description: profile.description || profile.channel_description || '',
+      image_url: profile.image_url || profile.thumbnail_high || profile.thumbnail_medium || '/placeholder-channel.svg',
+      topic: profile.topic as ProfileTopic,
+      status: mapStatus(profile.status),
+      youtube_url: profile.youtube_url || '',
+      twitter_url: profile.twitter_url || '',
+      instagram_url: profile.instagram_url || '',
+      view_count: profile.view_count || 0,
+      created_at: profile.created_at,
+      updated_at: profile.updated_at, // ✅ Eksik alan eklendi
+      is_featured: profile.is_featured || false,
+    }))
+  , [dbProfiles]);
+
+  // Map database status to ProfileStatus
+  function mapStatus(dbStatus: string): ProfileStatus {
+    switch (dbStatus) {
+      case 'verified':
+        return 'verified';
+      case 'published':
+      case 'active':
+        return 'standard';
+      default:
+        return 'standard';
+    }
+  }
+
+  // Determine if featured based on is_featured flag or view count
+  const getFeaturedStatus = (profile: any): ProfileStatus => {
+    if (profile.is_featured) return 'featured';
+    if (profile.status === 'verified') return 'verified';
+    return 'standard';
+  };
+
+  // Map profiles with proper status
+  const mappedProfiles = useMemo(() => 
+    profiles.map(profile => ({
+      ...profile,
+      status: getFeaturedStatus(profile)
+    }))
+  , [profiles]);
 
   // Filter and search profiles
   const filteredProfiles = useMemo(() => {
-    let filtered = mockProfiles;
+    let filtered = mappedProfiles;
 
     // Apply topic filter
     if (activeTopic !== 'all') {
@@ -69,41 +111,41 @@ export default function Home() {
           return 0;
       }
     });
-  }, [activeFilter, activeTopic, searchQuery, sortBy]);
+  }, [activeFilter, activeTopic, searchQuery, sortBy, mappedProfiles]);
 
   // Get popular profiles for slider
   const popularProfiles = useMemo(() => 
-    mockProfiles
+    mappedProfiles
       .filter(p => p.status === 'featured')
       .sort((a, b) => b.view_count - a.view_count)
-  , []);
+  , [mappedProfiles]);
 
   // Get verified profiles for slider
   const verifiedProfiles = useMemo(() => 
-    mockProfiles
+    mappedProfiles
       .filter(p => p.status === 'verified')
       .sort((a, b) => b.view_count - a.view_count)
-  , []);
+  , [mappedProfiles]);
 
   // Calculate stats
   const stats = useMemo(() => ({
-    total: mockProfiles.length,
-    featured: mockProfiles.filter(p => p.status === 'featured').length,
-    verified: mockProfiles.filter(p => p.status === 'verified').length,
-    standard: mockProfiles.filter(p => p.status === 'standard').length,
-  }), []);
+    total: mappedProfiles.length,
+    featured: mappedProfiles.filter(p => p.status === 'featured').length,
+    verified: mappedProfiles.filter(p => p.status === 'verified').length,
+    standard: mappedProfiles.filter(p => p.status === 'standard').length,
+  }), [mappedProfiles]);
 
   // Calculate topic counts
   const topicCounts = useMemo(() => ({
-    all: mockProfiles.length,
-    'din-felsefe': mockProfiles.filter(p => p.topic === 'din-felsefe').length,
-    'bilim': mockProfiles.filter(p => p.topic === 'bilim').length,
-    'tarih': mockProfiles.filter(p => p.topic === 'tarih').length,
-    'gundem': mockProfiles.filter(p => p.topic === 'gundem').length,
-  }), []);
+    all: mappedProfiles.length,
+    'din-felsefe': mappedProfiles.filter(p => p.topic === 'din-felsefe').length,
+    'bilim': mappedProfiles.filter(p => p.topic === 'bilim').length,
+    'tarih': mappedProfiles.filter(p => p.topic === 'tarih').length,
+    'gundem': mappedProfiles.filter(p => p.topic === 'gundem').length,
+  }), [mappedProfiles]);
 
   const statusCounts = {
-    all: mockProfiles.length,
+    all: mappedProfiles.length,
     featured: stats.featured,
     verified: stats.verified,
     standard: stats.standard,
@@ -134,7 +176,7 @@ export default function Home() {
         </Container>
       </div>
 
-      {/* Topic Filter Section - Moved above Pano */}
+      {/* Topic Filter Section */}
       <div className="bg-gradient-to-b from-white to-gray-50 border-b border-gray-200/50">
         <Container className="py-4 sm:py-6">
           <div className="space-y-3 sm:space-y-4">
@@ -153,10 +195,10 @@ export default function Home() {
         </Container>
       </div>
 
-      {/* Pano & Weekly Person - With Skeleton Support */}
+      {/* Pano & Weekly Person */}
       <div className="bg-gradient-to-b from-white to-gray-50 border-b border-gray-200/50">
         <Container className="py-6 sm:py-8">
-          {isLoading ? (
+          {dbLoading ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-in fade-in duration-500">
               <PanoCardSkeleton />
               <WeeklyPersonCardSkeleton />
@@ -171,8 +213,19 @@ export default function Home() {
       </div>
 
       <Container className="py-6 sm:py-8 space-y-6 sm:space-y-10">
-        {/* Show Loading Skeletons or Real Content */}
-        {isLoading ? (
+        {/* Database Error */}
+        {dbError && (
+          <div className="bg-red-50 border-2 border-red-200 rounded-xl p-4 flex items-start gap-3">
+            <AlertCircle size={20} className="text-red-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-red-900">Veri Yükleme Hatası</p>
+              <p className="text-sm text-red-700">{dbError}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Loading Skeletons */}
+        {dbLoading ? (
           <>
             {/* Popular Slider Skeleton */}
             <div className="space-y-3 sm:space-y-4 animate-in fade-in duration-500">
@@ -209,7 +262,7 @@ export default function Home() {
           </>
         ) : (
           <>
-            {/* Popular Slider Section - Real Content with Fade In */}
+            {/* Popular Slider Section */}
             {popularProfiles.length > 0 && !searchQuery && (
               <div className="space-y-3 sm:space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700">
                 <div className="flex items-center gap-2 sm:gap-2.5">
@@ -222,7 +275,7 @@ export default function Home() {
               </div>
             )}
 
-            {/* Verified Slider Section - Real Content with Fade In */}
+            {/* Verified Slider Section */}
             {verifiedProfiles.length > 0 && !searchQuery && (
               <div className="space-y-3 sm:space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
                 <div className="flex items-center gap-2 sm:gap-2.5">
@@ -235,7 +288,7 @@ export default function Home() {
               </div>
             )}
 
-            {/* Minimal Results Info */}
+            {/* Results Info */}
             {(searchQuery || activeTopic !== 'all') && (
               <div className="flex items-center justify-center gap-3 py-3 animate-in fade-in duration-500">
                 <div className="flex items-center gap-2 px-4 py-2 bg-white/60 backdrop-blur-sm rounded-full border border-gray-200/50 shadow-sm">
@@ -247,7 +300,7 @@ export default function Home() {
               </div>
             )}
 
-            {/* Profile Grid - Real Content with Staggered Fade In */}
+            {/* Profile Grid */}
             {filteredProfiles.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {filteredProfiles.map((profile, index) => (

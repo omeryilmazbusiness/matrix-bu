@@ -48,15 +48,15 @@ export function ProfileCard({ profile, className }: ProfileCardProps) {
     return descriptions[index] || descriptions[0];
   };
 
-  // Get topic configuration
-  const topicConfig = PROFILE_TOPICS[profile.topic];
+  // Get topic configuration with fallback
+  const topicConfig = PROFILE_TOPICS[profile.topic as keyof typeof PROFILE_TOPICS] || PROFILE_TOPICS['din-felsefe'];
   const TopicIcon = topicIconMap[topicConfig.iconName as keyof typeof topicIconMap];
   
-  // Get status configuration
-  const statusConfig = PROFILE_STATUS[profile.status];
+  // Get status configuration with fallback
+  const statusConfig = PROFILE_STATUS[profile.status as keyof typeof PROFILE_STATUS] || PROFILE_STATUS['standard'];
 
   return (
-    <Link href={`/profil/${profile.slug}`}>
+    <Link href={`/kanallar/${profile.slug}`}>
       <Card 
         className={cn(
           'group relative overflow-hidden transition-all duration-500 hover:shadow-2xl hover:scale-[1.02] cursor-pointer border-0',
@@ -68,11 +68,14 @@ export function ProfileCard({ profile, className }: ProfileCardProps) {
         <div className="absolute inset-0">
           <Image
             src={profile.image_url}
-            alt={profile.title}
+            alt={`${profile.title} - YouTube Kanalı`}
             fill
             className="object-cover transition-transform duration-700 group-hover:scale-110"
             sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            priority={false}
+            loading="lazy"
+            quality={85}
+            placeholder="blur"
+            blurDataURL="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iNDAwIiBoZWlnaHQ9IjQwMCIgZmlsbD0iI2YzZjRmNiIvPjwvc3ZnPg=="
           />
           
           {/* Gradient Overlay - Bottom Half with Blur */}

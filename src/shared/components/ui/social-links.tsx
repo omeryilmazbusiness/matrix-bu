@@ -3,19 +3,19 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 interface SocialLink {
-  platform: 'youtube' | 'twitter' | 'instagram' | 'tiktok';
+  platform: string; // string olarak değiştirdik - daha esnek
   url?: string;
   nick?: string;
 }
 
 interface SocialLinksProps {
-  links: SocialLink[];
+  links?: SocialLink[];
   variant?: 'buttons' | 'nicks' | 'both';
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
 
-const socialConfig = {
+const socialConfig: Record<string, any> = { // Record<string, any> ile dinamik yapı
   youtube: {
     icon: Youtube,
     color: 'hover:bg-red-500 hover:text-white',
@@ -28,7 +28,7 @@ const socialConfig = {
   },
   instagram: {
     icon: Instagram,
-    color: 'hover:bg-gradient-to-br hover:from-purple-500 hover:to-pink-500 hover:text-white',
+    color: 'hover:bg-linear-to-br hover:from-purple-500 hover:to-pink-500 hover:text-white',
     label: 'Instagram'
   },
   tiktok: {
@@ -44,7 +44,8 @@ export function SocialLinks({
   size = 'md',
   className 
 }: SocialLinksProps) {
-  const filteredLinks = links.filter(link => link.url || link.nick);
+  // Guard clause: links undefined veya null ise boş array kullan
+  const filteredLinks = (links || []).filter(link => link.url || link.nick);
   
   if (filteredLinks.length === 0) return null;
 
@@ -77,6 +78,8 @@ export function SocialLinks({
             if (!link.url) return null;
             
             const config = socialConfig[link.platform];
+            if (!config) return null; // Platform tanımlı değilse skip et
+            
             const Icon = config.icon;
             
             return (

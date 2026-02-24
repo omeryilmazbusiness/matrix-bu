@@ -162,11 +162,19 @@ export function SuggestChannelButton() {
       <button
         onClick={() => setIsOpen(true)}
         className={cn(
-          'fixed bottom-6 right-6 z-50',
-          'flex items-center gap-2 px-5 py-3 sm:px-6 sm:py-3.5',
+          'fixed z-50',
+          // Mobile positioning - above safe area
+          'bottom-20 right-4',
+          // Desktop positioning
+          'md:bottom-6 md:right-6',
+          'flex items-center gap-2',
+          // Mobile size
+          'px-4 py-3',
+          // Desktop size
+          'sm:px-6 sm:py-3.5',
           'bg-linear-to-r from-indigo-600 via-purple-600 to-pink-600',
-          'text-white font-semibold text-sm sm:text-base',
-          'rounded-full shadow-2xl',
+          'text-white font-bold text-sm sm:text-base',
+          'rounded-full shadow-2xl shadow-indigo-500/30',
           'hover:shadow-indigo-500/50 hover:scale-105',
           'active:scale-95',
           'transition-all duration-300',
@@ -174,8 +182,7 @@ export function SuggestChannelButton() {
         )}
       >
         <PlusCircle size={20} strokeWidth={2.5} className="sm:w-5 sm:h-5" />
-        <span className="hidden sm:inline">Kanal Öner</span>
-        <span className="sm:hidden">Öner</span>
+        <span className="font-semibold">Kanal Öner</span>
       </button>
 
       {/* Popup Dialog */}

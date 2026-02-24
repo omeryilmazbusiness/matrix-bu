@@ -4,6 +4,27 @@ export type ProfileStatus = 'featured' | 'verified' | 'standard';
 // Topic types
 export type ProfileTopic = 'din-felsefe' | 'bilim' | 'tarih' | 'gundem';
 
+// Default images
+export const DEFAULT_CHANNEL_IMAGE = '/placeholder-channel.svg';
+
+// Helper function to get channel image with fallback
+export function getChannelImage(imageUrl: string | null | undefined): string {
+  if (!imageUrl || imageUrl === '') {
+    return DEFAULT_CHANNEL_IMAGE;
+  }
+  
+  // Check if it's a valid URL or path
+  try {
+    // If it starts with http/https or /, it's valid
+    if (imageUrl.startsWith('http') || imageUrl.startsWith('/')) {
+      return imageUrl;
+    }
+    return DEFAULT_CHANNEL_IMAGE;
+  } catch {
+    return DEFAULT_CHANNEL_IMAGE;
+  }
+}
+
 // Profile status configuration
 export const PROFILE_STATUS = {
   featured: {
